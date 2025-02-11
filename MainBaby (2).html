@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Proxy Viewer</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-primary: #6366f1;
+            --accent-hover: #818cf8;
+            --success: #22c55e;
+            --error: #ef4444;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 1.5rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            background: var(--bg-tertiary);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .primary-btn {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .secondary-btn {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .secondary-btn:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .frame-container {
+            background: white;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            height: 600px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .frame-container.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            border-radius: 0;
+        }
+
+        .fullscreen-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            opacity: 0.7;
+        }
+
+        .fullscreen-btn:hover {
+            opacity: 1;
+            background: var(--bg-tertiary);
+        }
+
+        .status {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            display: none;
+        }
+
+        .status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+
+        .status.success {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--accent-primary);
+            transform-origin: left;
+            display: none;
+        }
+
+        @keyframes loading {
+            0% { transform: scaleX(0); }
+            50% { transform: scaleX(0.5); }
+            100% { transform: scaleX(1); }
+        }
+
+        .loading.active {
+            display: block;
+            animation: loading 2s infinite ease-in-out;
+        }
+
+        #outputFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 1rem; }
+            .container { padding: 1rem; }
+            .buttons { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">I HATE BABYS</h1>
+            <p class="subtitle">Dont get caught sigma</p>
+        </div>
+
+        <div class="input-group">
+            <input type="text" 
+                   class="url-input" 
+                   id="urlInput" 
+                   placeholder="Enter URL (e.g., https://example.com)"
+                   value="https://example.com">
+            
+            <div class="buttons">
+                <button class="primary-btn" onclick="proxyRequest('allorigins')">
+                    AllOrigins Proxy
+                </button>
+                <button class="primary-btn" onclick="proxyRequest('corsbridge')">
+                    CORS Bridge
+                </button>
+                <button class="secondary-btn" onclick="clearViewer()">
+                    Clear
+                </button>
+            </div>
+        </div>
+
+        <div id="status" class="status"></div>
+        <div id="loading" class="loading"></div>
+
+        <div class="frame-container" id="frameContainer">
+            <button class="fullscreen-btn" onclick="toggleFullscreen()" id="fullscreenBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>
+                <span>Fullscreen</span>
+            </button>
+            <iframe id="outputFrame" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const PROXY_SERVICES = {
+            allorigins: {
+                url: 'https://api.allorigins.win/raw?url=',
+                transform: url => `${PROXY_SERVICES.allorigins.url}${encodeURIComponent(url)}`
+            },
+            corsbridge: {
+                url: 'https://api.codetabs.com/v1/proxy?quest=',
+                transform: url => `${PROXY_SERVICES.corsbridge.url}${encodeURIComponent(url)}`
+            }
+        };
+
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.style.display = 'block';
+            status.className = `status ${isError ? 'error' : 'success'}`;
+        }
+
+        function showLoading(show = true) {
+            const loading = document.getElementById('loading');
+            loading.className = show ? 'loading active' : 'loading';
+        }
+
+        function clearViewer() {
+            document.getElementById('outputFrame').srcdoc = '';
+            document.getElementById('status').style.display = 'none';
+            showLoading(false);
+        }
+
+        function toggleFullscreen() {
+            const container = document.getElementById('frameContainer');
+            const button = document.getElementById('fullscreenBtn');
+            container.classList.toggle('fullscreen');
+            
+            if (container.classList.contains('fullscreen')) {
+                button.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                    </svg>
+                    <span>Exit</span>
+                `;
+                document.addEventListener('keydown', handleEscKey);
+            } else {
+                button.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    </svg>
+                    <span>Fullscreen</span>
+                `;
+                document.removeEventListener('keydown', handleEscKey);
+            }
+        }
+
+        function handleEscKey(e) {
+            if (e.key === 'Escape') {
+                const container = document.getElementById('frameContainer');
+                if (container.classList.contains('fullscreen')) {
+                    toggleFullscreen();
+                }
+            }
+        }
+
+        async function proxyRequest(proxyType) {
+            const url = document.getElementById('urlInput').value.trim();
+            
+            if (!url) {
+                showStatus('Please enter a URL', true);
+                return;
+            }
+
+            try {
+                new URL(url);
+            } catch {
+                showStatus('Please enter a valid URL', true);
+                return;
+            }
+
+            showLoading(true);
+            showStatus('Loading content...');
+
+            try {
+                const proxyService = PROXY_SERVICES[proxyType];
+                const proxiedUrl = proxyService.transform(url);
+                
+                const response = await fetch(proxiedUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                let content = await response.text();
+
+                // Process relative URLs
+                try {
+                    const baseUrl = new URL(url);
+                    content = content.replace(/href=["']\//g, `href="${baseUrl.origin}/`);
+                    content = content.replace(/src=["']\//g, `src="${baseUrl.origin}/`);
+                    
+                    content = content.replace(/href=["'](?!http|https|\/\/|data:|mailto:|tel:)([^"']+)/g, 
+                        `href="${baseUrl.href}$1`);
+                    content = content.replace(/src=["'](?!http|https|\/\/|data:)([^"']+)/g, 
+                        `src="${baseUrl.href}$1`);
+
+                    content = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <base href="${url}">
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <style>
+                                body { margin: 0; padding: 0; }
+                                img, video { max-width: 100%; height: auto; }
+                            </style>
+                        </head>
+                        <body>${content}</body>
+                        </html>
+                    `;
+                } catch (urlError) {
+                    console.error('URL processing error:', urlError);
+                }
+
+                document.getElementById('outputFrame').srcdoc = content;
+                showStatus('Content loaded successfully');
+
+            } catch (error) {
+                console.error('Proxy error:', error);
+                showStatus(`Failed to load content: ${error.message}`, true);
+                
+                // Try alternate proxy if first one fails
+                try {
+                    const alternateProxy = proxyType === 'allorigins' ? 'corsbridge' : 'allorigins';
+                    const alternateUrl = PROXY_SERVICES[alternateProxy].transform(url);
+                    
+                    const response = await fetch(alternateUrl);
+                    if (!response.ok) throw new Error('Alternate proxy failed');
+                    
+                    const content = await response.text();
+                    document.getElementById('outputFrame').srcdoc = content;
+                    showStatus('Content loaded using backup proxy');
+                    
+                } catch (backupError) {
+                    showStatus('All proxy attempts failed. Please try again later.', true);
+                }
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Keyboard shortcuts
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                proxyRequest('allorigins');
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F11' || (e.key === 'f' && (e.ctrlKey || e.metaKey))) {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
